@@ -5,7 +5,7 @@ import hmac
 
 @dataclass
 class LogForm:
-    def __post_init__(self):  # Исправлено с __post__init
+    def __post_init__(self):  
         self.st = st
         self.st_app = Init()
 
