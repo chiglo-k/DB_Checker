@@ -8,10 +8,11 @@ from App_init.SQLink import SQLTable
 
 @dataclass
 class BLCheckF:
-
+    """Вывод данных о незакрытых договоров хранния"""
 
     def __post_init__(self):
         self.sql = SQLTable()
+        # Номера договоров живого краба
         self.contract_live_crab: List = ['401', '402', '2403',
                                          '2406', '2404', '2405',
                                          '2408', '2407', '2501',
@@ -30,6 +31,7 @@ class BLCheckF:
             self.refactor_data(data)
 
     def refactor_data(self, data):
+        """Вывод отформатированных данных"""
         _DATE_AGR = 'Дата дополнения'
         data = data.loc[data['contract_storage'] != '711']
         data = data.rename(columns={'files':'Файл',
@@ -45,6 +47,7 @@ class BLCheckF:
         data[_DATE_AGR] = pd.to_datetime(data[_DATE_AGR], errors='coerce')
 
         def highlight_column(df):
+            """Выделение столбца цветом в зависимости от времени его создания"""
             current_date = datetime.now().date()
             days_diff = [(current_date - d.date()).days if pd.notnull(d) else 0
                          for d in data[_DATE_AGR]]

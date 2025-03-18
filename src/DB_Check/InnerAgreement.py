@@ -26,6 +26,7 @@ class InnerAgreement:
 
 
     def filter_agreement(self):
+
         agreement_data_frame: pd.DataFrame = self.inner_market.loc[self.inner_market["Дата Договора"]
                                                              >= f"01.01.{str(dt.datetime.now().year)}"].copy()
         agreement_data_frame['Договор поставки'] = (agreement_data_frame['Договор поставки'])

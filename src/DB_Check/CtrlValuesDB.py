@@ -6,6 +6,7 @@ from DB_Check.SqlCheck import SQLTable
 
 @dataclass
 class CtrlValDB:
+
     data: List[Tuple[pd.DataFrame, str]]
     name_table: list = field(default_factory=lambda: ['Внутренний рынок', 'Хранение', 'Экспорт'])
 

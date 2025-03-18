@@ -7,23 +7,21 @@ from typing import Dict
 
 @dataclass
 class Fesco:
-    #init
+
     main_data: pd.DataFrame = None
     data_input: Dict[str, int] = field(default_factory=dict)
     sql: SQLTable = field(init=False)
 
     def __post_init__(self):
-        # as do like post_init functions
         self.sql = SQLTable()
         self.main_data = self.sql.bill_fesco()
 
 
     def data_fesco_show(self):
-        # Select *  from
         fesco = self.sql.bill_fesco_data().fillna("")
 
         def highlight_unpaid(x):
-            # More robust version with error handling
+            """Если нет платежного поручения, то выделяется желтым"""
             return [
                 'background-color: yellow' if pd.isna(val) or val == "" else ''
                 for val in x
@@ -42,6 +40,7 @@ class Fesco:
         )
 
     def unclosed_bill(self):
+
         data = self.sql.bill_fesco_unclosed().fillna("")
 
         dinamic_filters = DynamicFilters(
@@ -54,13 +53,13 @@ class Fesco:
         st.dataframe(filtered_df, column_config={"id": None})
 
     def form_registration(self):
-        #create form registration
+        #Создание формы регистрации счета
         with st.form('Fesco'):
             for column in self.main_data.columns:
-                # depends of column its diff type of input data
+                # Выборка по столбцам
                 if column not in ['id', 'amount', 'payment', 'date_payment', 'agent', 'transport_id']:
                     if column == 'service':
-                        # create select list
+                        # Создание листа значений
                         data_service = self.sql.service_fesco()
                         self.data_input[column] = st.selectbox(
                             label="Сервис",
@@ -79,7 +78,7 @@ class Fesco:
 
 
     def form_close_registration(self):
-        #close bill <---- here need to filter bills which are closed
+        #Фильтр по номеру рейса и счета
         column_unique = ['bill', 'transport_id']
         unique_values = self.main_data.loc[~self.main_data['payment'].notnull()]
         unique_values = unique_values[column_unique].apply(tuple, axis=1).unique()
@@ -100,6 +99,7 @@ class Fesco:
                 self.enviar_to_sql(self.data_input, select_values, key='add_extra')
                 st.rerun()
     def delete_fesco_bill(self):
+        """Удаление счета"""
         column_unique = ['transport_id', 'serial', 'service', 'bill']
         unique_values = self.main_data[column_unique].drop_duplicates()
         select_serial = st.selectbox('Выберите серию', unique_values['serial'].unique())
@@ -117,7 +117,7 @@ class Fesco:
             st.rerun()
 
     def add_new_service(self):
-        #extra function with direct send --- how to secure?
+        """Добавление новой операции для оплаты"""
         try:
             with st.form("Add new Servise"):
                 service = st.text_input("Input Service: ")
@@ -130,6 +130,7 @@ class Fesco:
 
 
     def enviar_to_sql(self, data_tuples, select_values=None, key=None):
+        """Передача данных для SQL"""
         try:
             if key in ['add_data', 'add_extra']:
                 # Создаем кортеж значений для вставки

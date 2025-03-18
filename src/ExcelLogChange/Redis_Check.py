@@ -1,6 +1,7 @@
 import redis
 from Data_Instances.def_atr import Attr
 
+"""Проверка Redis"""
 #Доступ к секрету
 tml = Attr()
 

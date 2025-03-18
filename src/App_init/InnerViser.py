@@ -16,18 +16,20 @@ class InnerViser:
 
 
     def higlight_column(self, data, df):
+        """Если при реализации продукции ее кол-во поло-ое зеленый, иначе красный"""
         return (['background-color: green'
              if df.loc[i, 'Остаток'] > 0
              else 'background-color: red'
              for i in df.index])
 
     def inner_create(self):
-
+        """Динамический изеняемый год проверки"""
         year_previous = dt.now().year - 1
         cur_year = dt.now().year
         selected = st.sidebar.selectbox("Год проверки", [f"{cur_year}", f"{year_previous}"], key="Года")
 
         if selected:
+            """Редактор вывода значений"""
             data = self.sql.save_inner(year=int(selected))
             data= data.rename(columns={'files':'Файл',
                                'vessel':'Судно',

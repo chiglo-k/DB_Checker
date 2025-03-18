@@ -22,6 +22,7 @@ class SQLTable():
             return self.cur
 
         def add_to_bl_check(self, data):
+                """Добавление данных по не закрытым доплонениям"""
                 self.clean_date(key='BL')
                 self.cur.executemany("""insert into bl_check_contract_all
                                         (files, contract_storage, agreement_num_st,
@@ -32,6 +33,7 @@ class SQLTable():
                 self.conn.commit()
 
         def add_to_conosaments_null(self, data):
+                """Добовление данных по пропущенным значениям"""
                 self.clean_date(key='Conosaments')
                 self.cur.executemany("""insert into conosaments_null 
                                         (files, collumn_missing, table_name)
@@ -40,6 +42,7 @@ class SQLTable():
 
 
         def fetch_agreement_inner(self):
+            """Выгрузка данных по существующим записям договоров внутреннего рынка"""
             self.cur.execute("select * from agreement_data")
             column_names = [desc[0] for desc in self.cur.description]
             row = self.cur.fetchall()
@@ -47,6 +50,7 @@ class SQLTable():
             return data
 
         def add_to_agreemnent_inner(self, data):
+            """Доабвления данных по договорам"""
             self.cur.executemany("""insert into agreement_data
                                     (files, seller, buyer, agreement_number
                                     ,agreement_date, transport)
@@ -68,6 +72,7 @@ class SQLTable():
             self.conn.commit()
 
         def add_to_inner_save(self, data):
+            """Добавление данных по остаткам продукции на хранении"""
             self.clean_date(key='innerSave')
             self.cur.executemany(""" insert into inner_save
                                     (files, vessel, producer, production, sort,
@@ -77,6 +82,7 @@ class SQLTable():
             self.conn.commit()
 
         def clean_date(self, key):
+            """Очистка временных таблци"""
             if key == 'Conosaments':
                 self.cur.execute("delete from conosaments_null")
                 self.reset_sequence("conosaments_null", "id")
