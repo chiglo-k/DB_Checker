@@ -199,8 +199,8 @@ flowchart TD
     PS -->|"Автоматическая обработка"| DB_Checker
     DB_Checker -->|"Валидация и проверка"| SQL
     Pentaho -->|"ETL процесс"| SQL
-    SQL -->|"Аналитика"| Streamlit
-    SQL -->|"Визуализация"| Superset
+    SQL -->|"Аналитика качества данных"| Streamlit
+    SQL -->|"Аналитика данных БД"| Superset
     
     %% Вспомогательные потоки
     PowerQuery -.->|"Хеширование"| Python
