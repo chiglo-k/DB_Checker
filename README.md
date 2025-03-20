@@ -18,6 +18,43 @@
   1. Автоматическое выполнение каждые 15 минут
   2.  Управление процессом обновления данных
 
+    $file = path_to_file
+    
+    while ($true) {
+        try {
+            $excel = New-Object -ComObject Excel.Application
+            $excel.Visible = $false
+            $excel.DisplayAlerts = $false
+            
+            $workbook = $excel.Workbooks.Open($file)
+            $workbook.RefreshAll()
+            
+            # Ждем завершения обновления
+            Start-Sleep -Seconds 100
+            
+            $workbook.Save()
+            $workbook.Close()
+        }
+        catch {
+            Write-Host "Ошибка: $_"
+        }
+        finally {
+            if ($workbook) {
+                [System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
+            }
+            if ($excel) {
+                $excel.Quit()
+                [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+            }
+            [System.GC]::Collect()
+            [System.GC]::WaitForPendingFinalizers()
+        }
+        
+        # Ожидание перед следующим открытием файла
+        Start-Sleep -Seconds 660
+    }
+
+
 ### Обработка и хранение данных
 
   DB_Checker:
@@ -74,10 +111,11 @@ for each row execute function data_trk_agreement()
   4. Выполнение программы DB_Checker для контроля данных по расписанию
   Обновление Redis-кэша
 
-  5. Сохранение в SQL-базу данных
-  6. Обновление данных в Streamlit
-  7. Анализ данных через Superset
-  8. Передача метрик в Prometheus/Grafana
+  5. Обработка данных через Pentaho по расписанию
+  6. Сохранение в SQL-базу данных
+  7. Обновление данных в Streamlit
+  8. Анализ данных через Superset
+  9. Передача метрик в Prometheus/Grafana
 
 ## Технические особенности
 ### Контейнеризация
