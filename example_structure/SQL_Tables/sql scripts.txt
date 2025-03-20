@@ -1,0 +1,380 @@
+create or replace function data_trk_agreement()
+returns trigger as $$
+begin
+	if new.seller = 'ТРК' then
+		insert into agreement_data_trk(files, seller,
+		buyer, agreement_number, agreement_date, transport)
+		values (new.files, new.seller,
+		new.buyer, new.agreement_number, new.agreement_date, new.transport);
+	end if;
+	return new;
+end;
+$$ language plpgsql;
+
+
+create trigger trk_insert
+after insert on agreement_data
+for each row execute function data_trk_agreement()
+
+
+create or replace function data_msi_agreement()
+return trigger as $$
+begin 
+	if new.seller = "МСИ" then 
+		agreement_data_msi(files, seller,
+		buyer, agreement_number, agreement_date, transport)
+		values (new.files, new.seller,
+		new.buyer, new.agreement_number, new.agreement_date, new.transport);
+	end if;
+	return new;
+end;
+$$ language plpgsql;
+
+
+
+create trigger msi_insert
+after insert on agreement_data
+for each row execute data_msi_agreement()
+
+
+
+CREATE OR REPLACE FUNCTION update_data_company_trk()
+RETURNS trigger AS $$
+BEGIN
+    IF NEW.agreement_number = OLD.agreement_number 
+    AND NEW.seller = 'ТРК' THEN
+        UPDATE agreement_data_trk 
+        SET files = NEW.files,
+            seller = NEW.seller,
+            buyer = NEW.buyer,
+            agreement_date = NEW.agreement_date,
+            transport = NEW.transport
+        WHERE agreement_number = NEW.agreement_number;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+create trigger update_trk_data
+after insert on agreement_data
+for each row execute function data_trk_agreement()
+
+
+
+CREATE OR REPLACE FUNCTION update_data_company_msi()
+RETURNS trigger AS $$
+BEGIN
+    IF NEW.agreement_number = OLD.agreement_number 
+    AND NEW.seller = 'МСИ' THEN
+        UPDATE agreement_data_msi 
+        SET files = NEW.files,
+            seller = NEW.seller,
+            buyer = NEW.buyer,
+            agreement_date = NEW.agreement_date,
+            transport = NEW.transport
+        WHERE agreement_number = NEW.agreement_number;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+------------------------------------------------------
+create table fesco_bill (
+id serial primary key,
+bill text not null,
+transport text not null,
+serial text not null,
+service text not null,
+count integer not null,
+price numeric(10,2) not null,
+amount numeric (10,2) generated always as (count * price) stored,
+date_bill date not null,
+payment text,
+date_payment text,
+agent text,
+transport_id text generated always as (transport || '-' || serial) stored
+);
+
+
+---------------------------------------------------------
+РЕЕСТР ВНУТРЕННИЙ РЫНОК
+
+create table agreement_data_trkvlad_rev(
+id serial primary key,
+agreement_number text references agreement_data_trk(agreement_number) on delete cascade,
+agreement_date date not null,
+buyer text not null,
+signed_agreement boolean default false,
+signed_upd boolean default false
+);
+
+
+create table agreement_data_trkmag_rev(
+id serial primary key,
+agreement_number text references agreement_data(agreement_number) on delete cascade,
+agreement_date date not null,
+buyer text not null,
+signed_agreement boolean default false,
+signed_upd boolean default false
+);
+
+
+create table agreement_data_msivlad_rev(
+id serial primary key,
+agreement_number text references agreement_data(agreement_number) on delete cascade,
+agreement_date date not null,
+buyer text not null,
+signed_agreement boolean default false,
+signed_upd boolean default false
+);
+
+create table agreement_data_msimag_rev(
+id serial primary key,
+agreement_number text references agreement_data(agreement_number) on delete cascade,
+agreement_date date not null,
+buyer text not null,
+signed_agreement boolean default false,
+signed_upd boolean default false
+);
+
+
+---------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.add_values_trkvld()
+RETURNS trigger AS $$
+BEGIN
+    IF NEW.files LIKE '%ВЛД%' AND NEW.seller LIKE 'ТРК' 
+    AND NOT EXISTS (
+        SELECT 1 FROM agreement_data_trkvlad_rev 
+        WHERE agreement_number = NEW.agreement_number
+    ) THEN
+        INSERT INTO agreement_data_trkvlad_rev
+            (agreement_number, agreement_date, buyer)
+        VALUES
+            (NEW.agreement_number, NEW.agreement_date, NEW.buyer);
+    END IF;
+
+    IF OLD.buyer != NEW.buyer 
+    AND OLD.agreement_number = NEW.agreement_number THEN
+        UPDATE agreement_data_trkvlad_rev
+        SET
+            buyer = NEW.buyer,
+            agreeement_date = NEW.agreement_date,
+            signed_agreement = False,
+            signed_upd = False
+        WHERE agreement_number = NEW.agreement_number;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+create trigger insert_rev_trk_vld
+after insert or update on agreement_data 
+for each row execute function public.add_values_trkvld();
+------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.add_values_trkmgd()
+RETURNS trigger AS $$
+BEGIN
+    IF NEW.files LIKE '%МГД%' AND NEW.seller LIKE 'ТРК' 
+    AND NOT EXISTS (
+        SELECT 1 FROM agreement_data_trkmag_rev 
+        WHERE agreement_number = NEW.agreement_number
+    ) THEN
+        INSERT INTO agreement_data_trkmag_rev 
+            (agreement_number, agreement_date, buyer)
+        VALUES
+            (NEW.agreement_number, NEW.agreement_date, NEW.buyer);
+    END IF;
+
+    IF OLD.buyer != NEW.buyer 
+    AND OLD.agreement_number = NEW.agreement_number THEN
+        UPDATE agreement_data_trkmag_rev 
+        SET
+            buyer = NEW.buyer,
+            agreeement_date = NEW.agreement_date,
+            signed_agreement = False,
+            signed_upd = False
+        WHERE agreement_number = NEW.agreement_number;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+create trigger insert_rev_trk_mgd
+after insert or update on agreement_data 
+for each row execute function public.add_values_trkmgd();
+-----------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.add_values_msimgd()
+RETURNS trigger AS $$
+BEGIN
+    IF NEW.files LIKE '%МГД%' AND NEW.seller LIKE 'МСИ' 
+    AND NOT EXISTS (
+        SELECT 1 FROM agreement_data_msimag_rev 
+        WHERE agreement_number = NEW.agreement_number
+    ) THEN
+        INSERT INTO agreement_data_msimag_rev 
+            (agreement_number, agreement_date, buyer)
+        VALUES
+            (NEW.agreement_number, NEW.agreement_date, NEW.buyer);
+    END IF;
+
+    IF OLD.buyer != NEW.buyer 
+    AND OLD.agreement_number = NEW.agreement_number THEN
+        UPDATE agreement_data_msimag_rev  
+        SET
+            buyer = NEW.buyer,
+            agreeement_date = NEW.agreement_date,
+            signed_agreement = False,
+            signed_upd = False
+        WHERE agreement_number = NEW.agreement_number;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+create trigger insert_rev_msi_mgd
+after insert or update on agreement_data 
+for each row execute function public.add_values_msimgd();
+-----------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.add_values_msivld()
+RETURNS trigger AS $$
+BEGIN
+    IF NEW.files LIKE '%ВЛД%' AND NEW.seller LIKE 'МСИ' 
+    AND NOT EXISTS (
+        SELECT 1 FROM agreement_data_msivlad_rev 
+        WHERE agreement_number = NEW.agreement_number
+    ) THEN
+        INSERT INTO agreement_data_msivlad_rev 
+            (agreement_number, agreement_date, buyer)
+        VALUES
+            (NEW.agreement_number, NEW.agreement_date, NEW.buyer);
+    END IF;
+
+    IF OLD.buyer != NEW.buyer 
+    AND OLD.agreement_number = NEW.agreement_number THEN
+        UPDATE agreement_data_msivlad_rev  
+        SET
+            buyer = NEW.buyer,
+            agreeement_date = NEW.agreement_date,
+            signed_agreement = False,
+            signed_upd = False
+        WHERE agreement_number = NEW.agreement_number;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+create trigger insert_rev_msi_vld
+after insert or update on agreement_data 
+for each row execute function public.add_values_msivld();
+
+----------------------------------------------------------
+
+create table sevice_fesco(
+id serial primary key,
+service text unique not null
+);
+
+alter table fesco_bill 
+add constraint service
+foreign key (service) references sevice_fesco(service);
+
+ALTER TABLE fesco_bill
+ADD CONSTRAINT u_bill_f UNIQUE (bill, transport, serial, service, price);
+
+
+
+
+-------------------------------------------------------------------
+
+Conosaments
+
+create table analyst.Conosaments (
+id serial primary key,
+file text not null,
+conosament text not null,
+date_of_operation date not null,
+vessel text not null,
+transport text not null,
+company text not null,
+production text not null,
+sort text,
+pack numeric(10,2) not null,
+places numeric(10,2) not null,
+value numeric(10,2) not null,
+operation text not null,
+path_track text not null
+)
+
+
+InnerMarket
+
+create table analyst.InnerOperation(
+id serial primary key,
+file text not null,
+buyer text not null,
+seller text not null,
+agreement text not null,
+date_agreement date not null,
+vessel text not null,
+production text not null,
+sort text,
+pack decimal(10,2) not null,
+conosament_num text not null,
+value decimal(10,2) not null,
+price decimal(10,2) not null,
+sum_value decimal(10,2) not null,
+inc text not null,
+bank text not null,
+transport text not null,
+port text not null
+)
+
+Export
+
+create table analyst.ExportOperation(
+id serial primary key,
+file text not null,
+contract text not null,
+seller text not null,
+buyer text not null,
+vessel text not null,
+transport text not null,
+agreement_num text not null,
+invoice text not null,
+date_agreement date not null,
+bl_num text not null,
+msc text,
+production text not null,
+sort text,
+pack decimal(10,2) not null,
+places decimal(10,2) not null,
+value decimal(10,2) not null,
+price_non_commercial decimal(10,2) not null,
+sum_values decimal(10,2) not null,
+date_arrival date,
+inc text not null,
+port text not null,
+consumer text
+)
+
+Проверка данных записи
+
+
