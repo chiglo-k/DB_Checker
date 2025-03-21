@@ -186,7 +186,6 @@ flowchart TD
     end
     
     subgraph Мониторинг["Мониторинг"]
-        Prometheus["Prometheus"]:::monitor
         Grafana["Grafana"]:::monitor
     end
     
@@ -207,8 +206,8 @@ flowchart TD
     %% Вспомогательные потоки
     PowerQuery -.->|"Хеширование"| Python
     Python -.->|"Обработка"| Redis
-    SQL -.->|"Метрики"| Prometheus
-    Prometheus -.->|"Визуализация"| Grafana
+    SQL -.->|"Метрики"| Render.com
+    Render.com -.->|"Визуализация"| Grafana
     
     %% Легенда
     subgraph Легенда["Легенда"]
