@@ -128,7 +128,7 @@ o	Следите за нагрузкой на систему при одновр
   
 Запуск происходит по следующим командам:
 
-  o	Streamlit(local): `streamlit run  __run_app__.py`
+  o	Streamlit(local): `streamlit run  __run_app__.py --server.address 0.0.0.0 --server.port 8000`
 
   o	Модули проверки данных вызовом `python __shedule__.py`
 
