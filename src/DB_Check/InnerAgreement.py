@@ -26,7 +26,6 @@ class InnerAgreement:
 
 
     def filter_agreement(self):
-
         agreement_data_frame: pd.DataFrame = self.inner_market.loc[self.inner_market["Дата Договора"]
                                                              >= f"01.01.{str(dt.datetime.now().year)}"].copy()
         agreement_data_frame['Договор поставки'] = (agreement_data_frame['Договор поставки'])
@@ -42,7 +41,7 @@ class InnerAgreement:
 
 
     def comparasion_data(self, agreement_data_frame, agreement_data_sql):
-        # Convert list to DataFrame
+
         df_frame = pd.DataFrame(agreement_data_frame, columns=['Файлы', 'Продавец',
                                                              'Покупатель', 'Договор поставки',
                                                              'Дата Договора', 'Транспорт'])
@@ -50,7 +49,7 @@ class InnerAgreement:
         frame_numbers = df_frame['Договор поставки'].tolist()
         sql_numbers = agreement_data_sql['agreement_number'].tolist()
 
-        # Update existing records
+        # Обновление существующих записей
         for number in frame_numbers:
             if number in sql_numbers:
                 ### Add log update
@@ -62,16 +61,14 @@ class InnerAgreement:
                 self.sql_enviar(df_frame[df_frame['Договор поставки'] == number],
                               keyword='add_data')
 
-        # Delete missing records if not in new then delete
+        # Если в новых данных нет записи из БД, то удаляем запись в БД
         for number in sql_numbers:
             if number not in frame_numbers:
                 self.sql_enviar(number, keyword='delete_data')
 
     def sql_enviar(self, data, keyword=None):
         if keyword == 'delete_data':
-            # Remove 'clause=' keyword
             self.sql.delete_data_agreement_inner(data)
         elif keyword == 'add_data' or keyword == 'update_data':
-            # Convert DataFrame row to list of tuples
             data_tuple = [tuple(row) for row in data.values]
             self.sql.add_to_agreemnent_inner(data=data_tuple)

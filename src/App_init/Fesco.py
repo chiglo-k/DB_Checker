@@ -7,7 +7,7 @@ from typing import Dict
 
 @dataclass
 class Fesco:
-
+    #init
     main_data: pd.DataFrame = None
     data_input: Dict[str, int] = field(default_factory=dict)
     sql: SQLTable = field(init=False)
@@ -18,10 +18,10 @@ class Fesco:
 
 
     def data_fesco_show(self):
+        # Select *  from
         fesco = self.sql.bill_fesco_data().fillna("")
 
         def highlight_unpaid(x):
-            """Если нет платежного поручения, то выделяется желтым"""
             return [
                 'background-color: yellow' if pd.isna(val) or val == "" else ''
                 for val in x
@@ -40,7 +40,6 @@ class Fesco:
         )
 
     def unclosed_bill(self):
-
         data = self.sql.bill_fesco_unclosed().fillna("")
 
         dinamic_filters = DynamicFilters(
@@ -53,13 +52,13 @@ class Fesco:
         st.dataframe(filtered_df, column_config={"id": None})
 
     def form_registration(self):
-        #Создание формы регистрации счета
+        # Форма регистрации счета
         with st.form('Fesco'):
             for column in self.main_data.columns:
-                # Выборка по столбцам
+
                 if column not in ['id', 'amount', 'payment', 'date_payment', 'agent', 'transport_id']:
                     if column == 'service':
-                        # Создание листа значений
+                        # Создание select list
                         data_service = self.sql.service_fesco()
                         self.data_input[column] = st.selectbox(
                             label="Сервис",
@@ -76,30 +75,37 @@ class Fesco:
             if submit:
                 self.enviar_to_sql(self.data_input, key='add_data')
 
-
     def form_close_registration(self):
-        #Фильтр по номеру рейса и счета
         column_unique = ['bill', 'transport_id']
         unique_values = self.main_data.loc[~self.main_data['payment'].notnull()]
         unique_values = unique_values[column_unique].apply(tuple, axis=1).unique()
-        select_values = st.selectbox(f"Выберите, {unique_values}")
-        with st.form('Fesco'):
-            for column in self.main_data.columns:
-                if column in ['payment', 'date_payment', 'agent']:
-                    if column in ['agent']:
-                        self.data_input[column] = st.text_input(column)
-                    elif column == 'date_payment':
-                        self.data_input[column] = st.date_input(column)
-                    else:
-                        self.data_input[column] = st.text_input(column)
 
-            submit = st.form_submit_button('Добавить')
+        # Создаем список для отображения в selectbox
+        display_options = [f"{bill} ({tid})" for bill, tid in unique_values]
 
-            if submit:
-                self.enviar_to_sql(self.data_input, select_values, key='add_extra')
-                st.rerun()
+        # Получаем выбранное значение
+        selected_index = st.selectbox("Выберите запись:", options=display_options)
+
+        if selected_index != "":
+            selected_bill, selected_tid = unique_values[list(display_options).index(selected_index)]
+
+            with st.form('Fesco'):
+                for column in self.main_data.columns:
+                    if column in ['payment', 'date_payment', 'agent']:
+                        if column in ['agent']:
+                            self.data_input[column] = st.text_input(column)
+                        elif column == 'date_payment':
+                            self.data_input[column] = st.date_input(column)
+                        else:
+                            self.data_input[column] = st.text_input(column)
+
+                submit = st.form_submit_button('Добавить')
+
+                if submit:
+                    self.enviar_to_sql(self.data_input, (selected_bill, selected_tid), key='add_extra')
+                    st.rerun()
+
     def delete_fesco_bill(self):
-        """Удаление счета"""
         column_unique = ['transport_id', 'serial', 'service', 'bill']
         unique_values = self.main_data[column_unique].drop_duplicates()
         select_serial = st.selectbox('Выберите серию', unique_values['serial'].unique())
@@ -117,7 +123,6 @@ class Fesco:
             st.rerun()
 
     def add_new_service(self):
-        """Добавление новой операции для оплаты"""
         try:
             with st.form("Add new Servise"):
                 service = st.text_input("Input Service: ")
@@ -130,7 +135,6 @@ class Fesco:
 
 
     def enviar_to_sql(self, data_tuples, select_values=None, key=None):
-        """Передача данных для SQL"""
         try:
             if key in ['add_data', 'add_extra']:
                 # Создаем кортеж значений для вставки

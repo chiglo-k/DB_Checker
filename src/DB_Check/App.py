@@ -46,4 +46,3 @@ class Init:
         self.check_bl()
         self.inner_market_save()
         self.inner_market_agreement()
-        # self.value_control()

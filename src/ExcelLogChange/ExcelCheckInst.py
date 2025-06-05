@@ -4,6 +4,8 @@ from typing import Dict, List
 import hashlib
 from ExcelLogChange.Redis import RedisInst
 from Data_Instances.def_atr import Attr
+from urllib.parse import urlparse
+import psycopg2
 
 
 @dataclass
@@ -69,6 +71,47 @@ class HashFile:
             print(f"Ошибка при обработке файлов: {str(e)}")
 
 
+@dataclass
+class SQL():
+    """Класс отправки значений в PostgreSQL"""
+    new_files: List[str] = field(default_factory=list)
+    alter_files: List[str] = field(default_factory=list)
+    def __post_init__(self):
+        tlm = Attr()
+        self.db_uri = tlm.config['sql']['sql_uri']
+        self.result = urlparse(self.db_uri)
+        self.cur = None
+        self.conn = psycopg2.connect(
+            database=tlm.config['sql']['db_name'],
+            user=self.result.username,
+            password=self.result.password,
+            host=self.result.hostname,
+            port=self.result.port
+        )
+        self.cur = self.conn.cursor()
+
+    def prepare_data(self, data, name):
+        for file_name in data:
+            file_name = str(file_name).split('/')[-4:]
+            if name == 'new_files':
+                self.new_files.append(str('/'.join(file_name)))
+            elif name == 'alter_files':
+                self.alter_files.append(str('/'.join(file_name)))
+
+        self.queries_sql()
+
+    def queries_sql(self):
+
+        data_to_insert = list(zip(self.new_files or ['None'],
+                                  self.alter_files or ['None']))
+
+        self.cur.execute("""Truncate check_sys.check_files;""")
+
+        self.cur.executemany("""INSERT INTO check_sys.check_files (new_files, alter_files) 
+                            VALUES (%s, %s)""", data_to_insert)
+        self.conn.commit()
+
+
 def main():
     """Основная функция"""
     try:
@@ -77,8 +120,12 @@ def main():
         test.hash_transform()
         test.match_redis_data()
 
-        print(f"Новые файлы: {test.redis.new_data}")
-        print(f"Изменённые файлы: {test.redis.list_alter}")
+        new_files = test.redis.new_data
+        alter_files = test.redis.list_alter
+    #Отправка значений в БД
+        sql_enviar = SQL()
+        sql_enviar.prepare_data(data=new_files, name='new_files')
+        sql_enviar.prepare_data(data=alter_files, name='alter_files')
 
     except Exception as e:
         print(f"Ошибка выполнения: {str(e)}")

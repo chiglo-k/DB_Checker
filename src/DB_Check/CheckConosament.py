@@ -9,7 +9,7 @@ class CheckConosament:
     """
     Проверка ошибок, пропущенных значений в фрейме коносаменты
     """
-    data: List[Tuple[pd.DataFrame, str]]  # Use capital Tuple from typing
+    data: List[Tuple[pd.DataFrame, str]]
 
     def __post_init__(self):
         logger.add(r"logs/log.txt", backtrace=True,
@@ -29,7 +29,9 @@ class CheckConosament:
         Проверка нулевых значений по наименованиям столбцов
         """
         missing_data_frames = []
-        column_exclude = ['Сорт', 'Отгрузка с', 'MSC', 'BL mod', 'Получатель']
+        column_exclude = ['Сорт', 'Отгрузка с', 'MSC', 'BL mod',
+                          'Получатель', 'Дата подхода', 'Получатель (если отличается от покупателя)']
+
         for data_analyse, name in self.data:
             for column_name in data_analyse.columns:
                 if column_name not in column_exclude:
@@ -45,7 +47,7 @@ class CheckConosament:
                 return pd.concat(missing_data_frames, axis=0)
 
     def display_null_data(self, null_data: pd.DataFrame) -> None:
-        if null_data.empty:  # если нет пропущенных значений
+        if getattr(null_data, 'empty', True):  # если None или пустой DataFrame
             sql_table = SQLTable()
             sql_table.clean_date(key='Conosaments')
         else:  # если есть пропущенные значения
@@ -59,4 +61,3 @@ class CheckConosament:
             sql_table.add_to_conosaments_null(data=data_to_sql)
         except ValueError as e:
             logger.error(f'{e} - Проверьте данные')
-

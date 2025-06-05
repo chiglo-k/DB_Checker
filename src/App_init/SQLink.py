@@ -36,7 +36,6 @@ class SQLTable():
             return None
 
     def check_bl_data(self, key):
-        """В зависимости от ключа `подтягивает` данные по компании"""
         query = f"""select * from bl_check_contract_all where seller LIKE '%{key}%'"""
         data = self._query_to_dataframe(query)
 
@@ -53,7 +52,6 @@ class SQLTable():
         return data
 
     def check_null_data(self):
-        """Данные по пропущенным значениям"""
         query = 'select * from conosaments_null'
         data = self._query_to_dataframe(query)
 
@@ -63,7 +61,6 @@ class SQLTable():
         return data
 
     def registry_inner_market(self):
-        """Номера договоров общие"""
         query = 'select * from agreement_data'
         data = self._query_to_dataframe(query)
 
@@ -80,32 +77,26 @@ class SQLTable():
         return data
 
     def save_inner(self, year):
-        """Остатки продукции на хранении по годам(+пересортица)"""
         query = f"""Select * From inner_save Where files like '%{year}%'"""
         return self._query_to_dataframe(query)
 
     def bill_fesco(self):
-        """Счета Феско"""
         query = "Select * From fesco_bill limit 10"
         return self._query_to_dataframe(query)
 
     def bill_fesco_data(self):
-        """Счета Феско полн."""
         query = "Select * From fesco_bill"
         return self._query_to_dataframe(query)
 
     def bill_fesco_unclosed(self):
-        """Неоплаченные счета"""
         query = "Select * From fesco_bill Where payment is Null"
         return self._query_to_dataframe(query)
 
     def service_fesco(self):
-        """Все операции по оплатам"""
         query = """select service from sevice_fesco"""
         return self._query_to_dataframe(query)
 
     def add_new_service(self, service):
-        """Добавление новой операции по оплате"""
         query = """insert into sevice_fesco (service) values (%s)"""
         try:
             self.cur.execute(query, (service,))
@@ -116,7 +107,6 @@ class SQLTable():
             return False
 
     def add_bill_fesco_reg(self, data):
-        """Добавление информации о счете в таблицу учета"""
         query = """
             insert into fesco_bill 
             (bill, transport, serial, service, count, price, date_bill)
@@ -131,7 +121,6 @@ class SQLTable():
             return False
 
     def add_bill_fesco_cls(self, data, clause):
-        """Добавление оплаты по счету"""
         query = """
             UPDATE fesco_bill
             SET payment = %s, date_payment = %s, agent = %s
@@ -146,7 +135,6 @@ class SQLTable():
             return False
 
     def delete_bill_fesco(self, clause):
-        """Удаление счета"""
         query = "delete from fesco_bill where transport_id = %s and service = %s and bill = %s"
         try:
             self.cur.execute(query, clause)
@@ -157,12 +145,10 @@ class SQLTable():
             return False
 
     def sql_table_rev(self, company, city):
-        """Номер договора в зависимотси от компании и города"""
         query = f"""select * from agreement_data_{company}{city}_rev"""
         return self._query_to_dataframe(query)
 
     def sql_update_rev(self, data, company, city):
-        """Обновление договоров"""
         query = f"""
             UPDATE agreement_data_{company}{city}_rev
             SET signed_agreement = %s, signed_upd = %s
@@ -173,7 +159,7 @@ class SQLTable():
             self.conn.commit()
             return True
         except Exception as e:
-            print(f"Ошибка при обновлении: {e}")
+            print(f"Ошибка при обновлении ревизии: {e}")
             return False
 
 

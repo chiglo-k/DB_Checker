@@ -45,11 +45,9 @@ class InnerMarketSave:
 
 
     def merge_holding(self):
-        # Сгруппированные фреймы
         conosament_df = self.group_conosament()
         inner_market_df = self.group_inner_market()
 
-        # Мердж по определнным колонкам
         merge_hold = pd.merge(conosament_df, inner_market_df,
                              on=["Файлы", "Судно", "Грузоотправитель", "Продукция", "Сорт"],
                              how="inner")

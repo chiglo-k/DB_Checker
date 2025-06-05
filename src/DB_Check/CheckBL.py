@@ -21,7 +21,6 @@ class CheckBL:
         logger.info("Check BL function start.")
 
     def preparation(self):
-        """Подготовка BL"""
         try:
             self.data_exprt[self.COLUMN_TRANSFER] = self.data_exprt[self.COLUMN_TRANSFER].fillna('NaN')
             self.data_storage[self.COLUMN_TRANSFER] = self.data_storage[self.COLUMN_TRANSFER].apply(self.remove_digit_after_letter)
@@ -32,7 +31,6 @@ class CheckBL:
 
     @staticmethod
     def remove_digit_after_letter(text):
-        """LRAT-1T2 --> LRAT-1T"""
         if pd.isna(text):
             return ''
         text = str(text)
@@ -40,7 +38,6 @@ class CheckBL:
 
     @staticmethod
     def remove_between_dashes(text):
-        """Частный случай LRAT-1-1T --> LRAT-1T"""
         return re.sub(r'-(.*?)-', '-', text)
 
     def table_missing_pivot(self) -> pd.DataFrame:
@@ -83,8 +80,7 @@ class CheckBL:
                                                 data_exprt_gr,
                                                 on=['Файлы','BL No',],
                                                 how='outer',
-                                                suffixes=['_storage', '_export'],
-                                                validate='one_to_one')
+                                                suffixes=['_storage', '_export'])
 
         data_check_ex_st: pd.DataFrame = (data_check_ex_st
                             .loc[data_check_ex_st['Дополнение к контракту_storage']
@@ -110,7 +106,6 @@ class CheckBL:
                 sql_table.clean_date(key='BL')
 
     def sql_enviar(self, data_check_ex_st: pd.DataFrame) -> None:
-        """Передача датафрейма в SQL"""
         try:
             data_to_sql = (data_check_ex_st[['Файлы', 'Контракт_storage',
                                             'Дополнение к контракту_storage','Дата_storage',
@@ -120,4 +115,3 @@ class CheckBL:
             sql_table.add_to_bl_check(data=data_to_sql)
         except ValueError as e:
             logger.error(f'{e} - Проверьте данные')
-
